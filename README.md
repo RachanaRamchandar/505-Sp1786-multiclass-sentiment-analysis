@@ -4,160 +4,144 @@ Fine-tuning a BERT model for multiclass sentiment classification using PyTorch, 
 
 ## Overview
 
-This project demonstrates transfer learning by fine-tuning a pretrained BERT model on a multiclass sentiment classification task using PyTorch. The model classifies short text inputs into negative, neutral, or positive sentiment categories.
+This project demonstrates transfer learning by fine-tuning a pretrained **BERT-base** model for multiclass sentiment classification using **PyTorch only**.  
+The model predicts whether a given text expresses **negative**, **neutral**, or **positive** sentiment.
+
+All steps required in the assignment — EDA, fine-tuning, evaluation metrics, confusion matrix, and inference pipeline — are implemented without using high-level Hugging Face training utilities.
 
 ---
 
 ## Dataset
 
-Dataset used: **Sp1786/multiclass-sentiment-analysis-dataset** (Hugging Face)
+**Dataset:** `Sp1786/multiclass-sentiment-analysis-dataset` (Hugging Face)
 
 Each sample contains:
 
-- `text`: Input sentence  
-- `label`: Numeric class ID  
-- `sentiment`: Human-readable label  
+- `text` – input sentence  
+- `label` – numeric class ID  
+- `sentiment` – human-readable label  
 
-Sentiment classes:
+### Sentiment Classes
 
-- 0 — Negative  
-- 1 — Neutral  
-- 2 — Positive  
+| Label | Sentiment |
+|-------|-----------|
+| 0     | Negative  |
+| 1     | Neutral   |
+| 2     | Positive  |
 
-The dataset was loaded using the Hugging Face `datasets` library with predefined train and test splits.
+**Dataset Size:**
+- Training samples: ~31,000  
+- Test samples: ~5,000  
+
+The dataset was loaded using the `datasets` library with predefined train/test splits.
 
 ---
 
 ## Exploratory Data Analysis (EDA)
 
-### Dataset Loading
+The class distribution of the training set was visualized using a bar chart.
 
-The dataset was loaded using `datasets.load_dataset()`.
-
-### Class Distribution
-
-A bar chart of the training labels was plotted to visualize how samples are distributed across sentiment classes.
-
-### Class Imbalance
-
-The training data shows moderate imbalance, with neutral examples occurring more frequently than positive and negative ones. This imbalance can bias model predictions toward the majority class.
+### Observations
+- The dataset shows moderate class imbalance.
+- Neutral samples occur more frequently than positive and negative samples.
+- Class-weighted loss was used to reduce bias toward the majority class.
 
 ---
 
-## Model Fine-Tuning
+## Model Architecture
 
-A pretrained **bert-base-uncased** model was fine-tuned for sequence classification using PyTorch only.
+**Base Model:** `bert-base-uncased`
 
-### Implementation Details
+- 12 Transformer encoder layers  
+- 768 hidden size  
+- 12 attention heads  
+- ~110M parameters  
 
-- Framework: PyTorch  
-- Tokenizer: BERT tokenizer  
-- Model: `BertForSequenceClassification`  
-- Output classes: 3  
+A linear classification head was added for 3-class prediction.
 
-The pretrained encoder parameters were reused, while the classification layer was trained for the sentiment task.
-
-### Handling Class Imbalance
-
-To reduce bias toward the majority class, class-weighted cross-entropy loss was applied. Class weights were computed from the training labels so that errors on less frequent classes contribute more to the loss during training.
+All BERT parameters were fine-tuned end-to-end.
 
 ---
 
-## Training Configuration
+## Fine-Tuning Details
+
+**Framework:** PyTorch (no Hugging Face Trainer used)
+
+**Tokenizer:** BERT tokenizer  
+**Maximum Sequence Length:** 256  
+
+### Training Configuration
 
 - Optimizer: AdamW  
 - Learning Rate: 2e-5  
 - Batch Size: 16  
 - Epochs: 3  
-- Maximum Sequence Length: 256  
-- Learning Rate Scheduler: Linear decay  
+- Scheduler: Linear decay  
+- Loss Function: Class-weighted CrossEntropyLoss  
+- Device: GPU (CUDA) when available  
 
-Training was performed on GPU when available.
+Class weights were computed from training labels to handle imbalance.
 
 ---
 
 ## Evaluation Metrics
 
-The fine-tuned model was evaluated on the test set using:
+The model was evaluated on the test set using:
 
 - Accuracy  
 - Precision (weighted)  
 - Recall (weighted)  
 - F1-score (weighted)  
 
-Weighted averaging was used to account for class imbalance.
+### Test Performance
+
+- **Accuracy:** ~0.76  
+- **Precision:** ~0.76  
+- **Recall:** ~0.76  
+- **F1-score (weighted):** ~0.76  
+
+Performance stabilized after three epochs, indicating convergence.
 
 ---
 
 ## Confusion Matrix
 
-A confusion matrix was generated to visualize prediction performance across the three sentiment classes and identify common misclassifications.
+A confusion matrix was generated to analyze misclassifications.
+
+### Key Observations
+
+- Positive and negative classes are well separated.
+- Neutral sentiment is the most challenging class.
+- Some confusion occurs between neutral and positive samples.
 
 ---
 
 ## Inference Pipeline
 
-A function `predict_text(text: str)` was implemented to classify new input text.
+A function `predict_text(text: str)` was implemented to classify new text inputs.
 
-The function:
+### Pipeline Steps
 
-1. Tokenizes the input string  
-2. Runs the model in evaluation mode  
-3. Computes class probabilities using softmax  
-4. Returns the predicted sentiment label and confidence score  
+1. Tokenize input text  
+2. Run model in evaluation mode  
+3. Apply softmax to obtain probabilities  
+4. Return predicted label and confidence score  
 
----
+### Example Predictions
 
-## Custom Predictions
+**Input:** I absolutely loved this product!  
+**Prediction:** Positive  
+**Confidence:** 0.99  
 
-The inference function was tested on several custom examples to demonstrate model performance on unseen text inputs.
+**Input:** This was the worst experience ever.  
+**Prediction:** Negative  
+**Confidence:** 0.99  
 
----
-
-## Results
-
-The model achieved approximately:
-
-- Accuracy ≈ 0.76  
-- Precision ≈ 0.76  
-- Recall ≈ 0.76  
-- F1-score ≈ 0.76 (weighted)  
-
-Performance plateaued after three epochs, indicating convergence for this dataset and configuration.
+**Input:** It was okay, nothing special.  
+**Prediction:** Neutral  
+**Confidence:** 0.69  
 
 ---
 
-## Conclusion
+## Repository Structure
 
-This project demonstrates the application of transfer learning for text classification using a pretrained transformer model. Despite moderate class imbalance and short input texts, the model learns meaningful sentiment patterns and generalizes to new examples.
-
----
-
-## Requirements
-
-- Python 3.x  
-- PyTorch  
-- Transformers  
-- Datasets  
-- Scikit-learn  
-- NumPy  
-- Matplotlib  
-
----
-
-## How to Run
-
-1. Install required libraries  
-2. Open the notebook  
-3. Run all cells sequentially  
-4. Train the model  
-5. Evaluate results  
-6. Test the inference function with custom text  
-
----
-
-## Notes
-
-- Fine-tuning was implemented using PyTorch only  
-- No high-level Hugging Face training utilities were used  
-- All steps (EDA, training, evaluation, inference) are included in the notebook
