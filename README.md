@@ -142,6 +142,3 @@ A function `predict_text(text: str)` was implemented to classify new text inputs
 **Confidence:** 0.69  
 
 ---
-
-## Repository Structure
-
